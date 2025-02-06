@@ -1,0 +1,6 @@
+# don't include binary files
+*.exe
+*.so
+*.dll
+*.o
+*.out
