@@ -181,6 +181,28 @@ utf8_t* utf8_goto_head(char* str);
 /// @param byte 
 bool utf8_is_7bit_ascii(utf8_t byte);
 
+/// @brief checks if string is 7bit ascii
+bool utf8_is_7bit_ascii_string(const utf8_t* str, uint32_t len);
+
+/// @brief null terminated version of `utf8_is_7bit_ascii_string_nt`
+/// checks if string is 7bit ascii
+bool utf8_is_7bit_ascii_string_nt(const utf8_t* str);
+
+/* FUTURE `string.h` functionality to be added
+int utf8_replace_malformed_tokens(utf8_t* str, uint32_t len, utf8_t chr);
+int utf8_replace_malformed_tokens_nt(utf8_t* str, utf8_t chr);
+
+
+int utf8_cmp(const utf8_t* lhs, uint32_t lhs_len, const utf8_t* rhs, uint32_t rhs_len);
+int utf8_cmp_nt(const utf8_t* lhs, const utf8_t* rhs);
+
+int utf8_find_char(const utf8_t* str, uint32_t len, const utf8_t* chr);
+int utf8_find_char_nt(const utf8_t* str, const utf8_t* chr);
+
+int utf8_find_substring(const utf8_t* str, uint32_t len, const utf8_t* substr, uint32_t sublen);
+int utf8_find_substring_nt(const utf8_t* str, const utf8_t* substr);
+*/
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
@@ -196,6 +218,26 @@ utf8_t* utf8_goto_head(char* str) {
 
 bool utf8_is_7bit_ascii(utf8_t byte) {
     return byte < 0x80;
+}
+
+bool utf8_is_7bit_ascii_string(const utf8_t* str, uint32_t len) {
+    
+    for (uint32_t i = 0; i < len; i++) {
+        if (!utf8_is_7bit_ascii(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool utf8_is_7bit_ascii_string_nt(const utf8_t* str) {
+    while (*str) {
+        if (!utf8_is_7bit_ascii(*str)) {
+            return false;
+        }
+        str++;
+    }
+    return true;
 }
 
 bool utf8_is_valid_codepoint(utf32_t codepoint) {
