@@ -30,6 +30,13 @@ typedef uint8_t utf8_t;
 // utf8 encoding of unicode replacement char.
 #define UNICODE_REPLACEMENT_CHAR_UFT8 UTF8_LITERAL("�")
 
+// sentinel value for `utf8_next_char` and `utf8_next_char_nt` representing when the string is exhausted.
+#define UTF8_END (uint32_t)(0)
+
+// sentinel value for 
+#define UTF8_ILLEGAL (uint32_t)(-1)
+
+
 // returned from `utf8_decode`, 
 // includes the decoded codepoint `codepoint` and the length `len`. 
 // If an error is encounted the unicode replacement character "�" is returned as the codepoint and the length is 1.
@@ -187,6 +194,48 @@ bool utf8_is_7bit_ascii_string(const utf8_t* str, uint32_t len);
 /// @brief null terminated version of `utf8_is_7bit_ascii_string_nt`
 /// checks if string is 7bit ascii
 bool utf8_is_7bit_ascii_string_nt(const utf8_t* str);
+
+/// @brief gets the index of the next char after the char at `idx`.
+/// if the char is not a valid utf8 character it proceeds by 1 byte.
+/// returns `UTF8_END` once string exhausted.
+/// @param str pointer to the string
+/// @param len length of the string in bytes
+/// @param idx byte index of the current char
+/// @return byte index of the next char or `UTF8_END` if the string is exhausted
+uint32_t utf8_next_char(utf8_t* str, uint32_t len, uint32_t idx);
+
+/// @brief null terminated version of `utf8_next_char`
+/// gets the index of the next char after the char at `idx`.
+/// if the char is not a valid utf8 character it proceeds by 1 byte.
+/// returns `UTF8_END` once string exhausted.
+/// @param str pointer to the null terminated string
+/// @param idx byte index of the current char
+/// @return byte index of the next char or `UTF8_END` if the string is exhausted
+uint32_t utf8_next_char_nt(utf8_t* str, uint32_t idx);
+
+/// @brief gets the index of the next char after the char at `idx`.
+/// returns `UTF8_END` once string exhausted.
+/// 
+/// @warning does NOT check for invalid encodings. 
+/// Should ONLY be used when the entire string, or the next char is known to be valid.
+/// e.g. `if (utf8_is_valid(&str[i])) { i = utf8_next_char_unsafe(str, len, i); }`
+/// @param str pointer to the string
+/// @param len length of the string in bytes
+/// @param idx byte index of the current char
+/// @return byte index of the next char or `UTF8_END` if the string is exhausted
+uint32_t utf8_next_char_unsafe(utf8_t* str, uint32_t len, uint32_t idx);
+
+/// @brief null terminated version of `utf8_next_char_unsafe`
+/// gets the index of the next char after the char at `idx`.
+/// returns `UTF8_END` once string exhausted.
+/// 
+/// @warning does NOT check for invalid encodings. 
+/// Should ONLY be used when the entire string, or the next char is known to be valid.
+/// e.g. `if (utf8_is_valid(&str[i])) { i = utf8_next_char_unsafe(str, len, i); }`
+/// @param str pointer to the null terminated string
+/// @param idx byte index of the current char
+/// @return byte index of the next char or `UTF8_END` if the string is exhausted
+uint32_t utf8_next_char_unsafe_nt(utf8_t* str, uint32_t idx);
 
 /* FUTURE `string.h` functionality to be added
 int utf8_replace_malformed_tokens(utf8_t* str, uint32_t len, utf8_t chr);
@@ -357,6 +406,51 @@ uint32_t utf8_length(const utf8_t* utf8) {
     if ((head & 0xf0) == 0xe0) return 3;
     if ((head & 0xf8) == 0xf0) return 4;
     return 1;
+}
+
+
+uint32_t utf8_next_char(utf8_t* str, uint32_t len, uint32_t idx) {
+    if (idx >= len) {
+        // zero is never a valid return value, since if idx == 0 then the smallest return value is 1. 
+        // Therefore we can safely use 0 as a sentinel value for end of string.
+        return UTF8_END;
+    }
+    // if an error is detected, only proceed by 1
+    if (!utf8_is_valid(&str[idx], len - idx)) {
+        return idx + 1;
+    }
+    return idx + utf8_length(&str[idx]);
+}
+
+uint32_t utf8_next_char_nt(utf8_t* str, uint32_t idx) {
+    if (str[idx] == 0) {
+        // zero is never a valid return value, since if idx == 0 then the smallest return value is 1. 
+        // Therefore we can safely use 0 as a sentinel value for end of string.
+        return UTF8_END; 
+    }
+    // if an error is detected, only proceed by 1
+    if (!utf8_is_valid_nt(&str[idx])) {
+        return idx + 1;
+    }
+    return idx + utf8_length(&str[idx]);
+}
+
+uint32_t utf8_next_char_unsafe(utf8_t* str, uint32_t len, uint32_t idx) {
+    if (idx == len) {
+        // zero is never a valid return value, since if idx == 0 then the smallest return value is 1. 
+        // Therefore we can safely use 0 as a sentinel value for end of string.
+        return UTF8_END;
+    }
+    return idx + utf8_length(&str[idx]);
+}
+
+uint32_t utf8_next_char_unsafe_nt(utf8_t* str, uint32_t idx) {
+    if (str[idx] == 0) {
+        // zero is never a valid return value, since if idx == 0 then the smallest return value is 1. 
+        // Therefore we can safely use 0 as a sentinel value for end of string.
+        return UTF8_END; 
+    }
+    return idx + utf8_length(&str[idx]);
 }
 
 uint32_t utf8_count(const utf8_t* str, size_t len) {
